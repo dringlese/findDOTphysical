@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import { getExaminers } from '../lib/supabase'
 import ExaminerCard from '../components/ExaminerCard'
 import SearchBar from '../components/SearchBar'
@@ -10,11 +10,7 @@ export default function HomePage() {
   const [error, setError] = useState(null)
   const [filters, setFilters] = useState({})
 
-  useEffect(() => {
-    fetchExaminers(filters)
-  }, [])
-
-  async function fetchExaminers(f) {
+  const fetchExaminers = useCallback(async (f) => {
     setLoading(true)
     setError(null)
     try {
@@ -25,12 +21,16 @@ export default function HomePage() {
     } finally {
       setLoading(false)
     }
-  }
+  }, [])
 
-  function handleSearch(newFilters) {
+  useEffect(() => {
+    fetchExaminers(filters)
+  }, [fetchExaminers])
+
+  const handleSearch = useCallback((newFilters) => {
     setFilters(newFilters)
     fetchExaminers(newFilters)
-  }
+  }, [fetchExaminers])
 
   return (
     <>
