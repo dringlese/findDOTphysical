@@ -1,36 +1,36 @@
-import { useState, useEffect, useCallback } from 'react'
+import { useState, useCallback, useRef } from 'react'
 import { getExaminers } from '../lib/supabase'
-import ExaminerCard from '../components/ExaminerCard'
 import SearchBar from '../components/SearchBar'
+import ExaminerResults from '../components/ExaminerResults'
 import SEOHead from '../components/SEOHead'
 
 export default function HomePage() {
   const [examiners, setExaminers] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
-  const [filters, setFilters] = useState({})
+  const hasLoadedOnce = useRef(false)
 
-  const fetchExaminers = useCallback(async (f) => {
+  const fetchExaminers = useCallback(async (filters) => {
     setLoading(true)
     setError(null)
     try {
-      const data = await getExaminers(f)
+      const data = await getExaminers(filters)
       setExaminers(data)
+      hasLoadedOnce.current = true
     } catch (err) {
       setError(err.message)
+      if (!hasLoadedOnce.current) setExaminers([])
     } finally {
       setLoading(false)
     }
   }, [])
 
-  useEffect(() => {
-    fetchExaminers(filters)
-  }, [fetchExaminers])
-
-  const handleSearch = useCallback((newFilters) => {
-    setFilters(newFilters)
-    fetchExaminers(newFilters)
-  }, [fetchExaminers])
+  const handleSearch = useCallback(
+    (newFilters) => {
+      fetchExaminers(newFilters)
+    },
+    [fetchExaminers]
+  )
 
   return (
     <>
@@ -41,7 +41,6 @@ export default function HomePage() {
       />
 
       <main className="main">
-        {/* ── Hero ── */}
         <section className="hero">
           <h1 className="hero-title">Find a DOT Physical Examiner in Oklahoma</h1>
           <p className="hero-sub">
@@ -49,36 +48,20 @@ export default function HomePage() {
           </p>
         </section>
 
-        {/* ── Search ── */}
-        <section className="search-section">
+        <section className="search-section" aria-label="Search and filters">
           <SearchBar onSearch={handleSearch} />
         </section>
 
-        {/* ── Results ── */}
-        <section className="results-section">
-          {loading && <p className="state-msg">Loading examiners…</p>}
-          {error && <p className="state-msg state-msg--error">Error: {error}</p>}
-
-          {!loading && !error && (
-            <>
-              <p className="results-count">
-                {examiners.length} examiner{examiners.length !== 1 ? 's' : ''} found
-              </p>
-
-              {examiners.length === 0 ? (
-                <p className="state-msg">No examiners match your search. Try adjusting your filters.</p>
-              ) : (
-                <div className="results-grid">
-                  {examiners.map((ex) => (
-                    <ExaminerCard key={ex.id} examiner={ex} />
-                  ))}
-                </div>
-              )}
-            </>
-          )}
+        <section className="results-section" aria-live="polite">
+          <ExaminerResults
+            examiners={examiners}
+            loading={loading}
+            error={error}
+            countLabel={`${examiners.length} examiner${examiners.length !== 1 ? 's' : ''} found`}
+            emptyMessage="No examiners match your search. Try adjusting your filters or clearing them."
+          />
         </section>
 
-        {/* ── CTA Banner ── */}
         <section className="cta-banner">
           <p className="cta-text">Are you a DOT examiner?</p>
           <a href="/get-listed" className="btn btn--cta">Get Listed Free →</a>

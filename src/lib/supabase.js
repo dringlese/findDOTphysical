@@ -9,27 +9,43 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 // ─── Examiner Queries ────────────────────────────────────────────────────────
 
-/** Fetch all active examiners, premium first */
-export async function getExaminers({ city, search, walkIns, openWeekends } = {}) {
-  let query = supabase
-    .from('examiners')
-    .select('*')
-    .eq('active', true)
-    .order('tier', { ascending: false }) // premium > featured > free
+const TIER_ORDER = { premium: 0, featured: 1, free: 2 }
 
-  if (city) query = query.ilike('city', city)
+/** Strip characters that break PostgREST `.or()` filters */
+function sanitizeSearchTerm(term) {
+  return term
+    .replace(/[%,()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Premium → Featured → Free, then alphabetical by name */
+export function sortExaminersByTier(list) {
+  return [...list].sort((a, b) => {
+    const byTier = (TIER_ORDER[a.tier] ?? 3) - (TIER_ORDER[b.tier] ?? 3)
+    if (byTier !== 0) return byTier
+    return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
+  })
+}
+
+/** Fetch active examiners with optional filters; sorted premium first */
+export async function getExaminers({ city, search, walkIns, openWeekends } = {}) {
+  let query = supabase.from('examiners').select('*').eq('active', true)
+
+  if (city) query = query.eq('city', city)
   if (walkIns) query = query.contains('badges', ['Walk-ins Welcome'])
   if (openWeekends) query = query.contains('badges', ['Open Weekends'])
-  if (search) {
-    query = query.or(`name.ilike.%${search}%,city.ilike.%${search}%,clinic_type.ilike.%${search}%`)
+
+  const q = sanitizeSearchTerm(search || '')
+  if (q) {
+    // Match practice names that start with the search text (e.g. "ed" → Edmond)
+    query = query.ilike('name', `${q}%`)
   }
 
   const { data, error } = await query
   if (error) throw error
 
-  // Sort: premium → featured → free (Supabase text sort isn't perfect for this)
-  const tierOrder = { premium: 0, featured: 1, free: 2 }
-  return (data || []).sort((a, b) => (tierOrder[a.tier] ?? 3) - (tierOrder[b.tier] ?? 3))
+  return sortExaminersByTier(data || [])
 }
 
 // ─── Admin API (service role server-side — bypasses RLS) ─────────────────────

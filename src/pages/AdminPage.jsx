@@ -1,87 +1,162 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { getAllExaminers, addExaminer, updateExaminer, deleteExaminer } from '../lib/supabase'
 
-// Simple hardcoded password (store in env var for real security)
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'dotadmin2024'
 
+const CITIES = [
+  'Oklahoma City',
+  'Tulsa',
+  'Norman',
+  'Lawton',
+  'Edmond',
+  'Broken Arrow',
+  'Midwest City',
+]
+
 const BLANK = {
-  name: '', clinic_type: '', city: '', state: 'OK', address: '',
-  phone: '', email: '', price: '', wait_time: '', hours: '',
-  badges: [], accepts: [], rating: '', review_count: 0,
-  tier: 'free', verified: false, active: true,
+  name: '',
+  clinic_type: '',
+  city: '',
+  state: 'OK',
+  address: '',
+  phone: '',
+  fax: '',
+  email: '',
+  website: '',
+  price: '',
+  wait_time: '',
+  hours: '',
+  badges: '',
+  accepts: '',
+  tier: 'free',
+  verified: false,
+  active: true,
+}
+
+function buildSavePayload(editing) {
+  return {
+    name: editing.name,
+    clinic_type: editing.clinic_type,
+    city: editing.city,
+    state: editing.state || 'OK',
+    address: editing.address,
+    phone: editing.phone,
+    fax: editing.fax,
+    email: editing.email,
+    website: editing.website,
+    price: editing.price,
+    wait_time: editing.wait_time,
+    hours: editing.hours,
+    badges: editing.badges,
+    accepts: editing.accepts,
+    tier: editing.tier,
+    verified: editing.verified,
+    active: editing.active,
+  }
 }
 
 export default function AdminPage() {
   const [authed, setAuthed] = useState(false)
   const [pw, setPw] = useState('')
   const [examiners, setExaminers] = useState([])
-  const [editing, setEditing] = useState(null) // examiner object or null (new)
-  const [formOpen, setFormOpen] = useState(false)
+  const [loading, setLoading] = useState(false)
   const [saving, setSaving] = useState(false)
-  const [msg, setMsg] = useState('')
+  const [updatingId, setUpdatingId] = useState(null)
+  const [editing, setEditing] = useState(null)
+  const [formOpen, setFormOpen] = useState(false)
+  const [msg, setMsg] = useState(null)
+  const msgTimer = useRef(null)
+
+  const showMsg = useCallback((text, isError = false) => {
+    setMsg({ text, isError })
+    clearTimeout(msgTimer.current)
+    msgTimer.current = setTimeout(() => setMsg(null), 4000)
+  }, [])
 
   function login() {
     if (pw === ADMIN_PASSWORD) setAuthed(true)
-    else alert('Wrong password')
+    else showMsg('Incorrect password', true)
   }
 
-  useEffect(() => {
-    if (authed) load()
-  }, [authed])
+  function logout() {
+    setAuthed(false)
+    setExaminers([])
+    setPw('')
+  }
 
-  async function load() {
+  const load = useCallback(async () => {
+    setLoading(true)
     try {
       const data = await getAllExaminers(pw)
       setExaminers(Array.isArray(data) ? data : [])
     } catch (err) {
-      setMsg('Load error: ' + err.message)
+      showMsg('Load error: ' + err.message, true)
+    } finally {
+      setLoading(false)
     }
-  }
+  }, [pw, showMsg])
+
+  useEffect(() => {
+    if (authed) load()
+  }, [authed, load])
 
   async function quickUpdate(id, updates) {
+    const snapshot = examiners
+    setExaminers((list) =>
+      list.map((ex) => (ex.id === id ? { ...ex, ...updates } : ex))
+    )
+    setUpdatingId(id)
     try {
       await updateExaminer(pw, id, updates)
-      await load()
+      showMsg('Saved')
     } catch (err) {
-      setMsg('❌ Update error: ' + err.message)
-      await load()
+      setExaminers(snapshot)
+      showMsg('Update failed: ' + err.message, true)
+    } finally {
+      setUpdatingId(null)
     }
   }
 
-  function openNew() { setEditing({ ...BLANK }); setFormOpen(true) }
-  function openEdit(ex) { setEditing({ ...ex }); setFormOpen(true) }
-  function closeForm() { setEditing(null); setFormOpen(false) }
+  function openNew() {
+    setEditing({ ...BLANK })
+    setFormOpen(true)
+  }
+
+  function openEdit(ex) {
+    setEditing({
+      ...ex,
+      badges: Array.isArray(ex.badges) ? ex.badges.join(', ') : ex.badges || '',
+      accepts: Array.isArray(ex.accepts) ? ex.accepts.join(', ') : ex.accepts || '',
+    })
+    setFormOpen(true)
+  }
+
+  function closeForm() {
+    setEditing(null)
+    setFormOpen(false)
+  }
 
   async function handleSave(e) {
     e.preventDefault()
-    setSaving(true)
-    setMsg('')
-    try {
-      const payload = {
-        ...editing,
-        rating: editing.rating ? parseFloat(editing.rating) : null,
-        review_count: parseInt(editing.review_count) || 0,
-        badges: typeof editing.badges === 'string'
-          ? editing.badges.split(',').map((s) => s.trim()).filter(Boolean)
-          : editing.badges,
-        accepts: typeof editing.accepts === 'string'
-          ? editing.accepts.split(',').map((s) => s.trim()).filter(Boolean)
-          : editing.accepts,
-      }
+    if (!editing.name?.trim()) {
+      showMsg('Name is required', true)
+      return
+    }
 
+    setSaving(true)
+    try {
+      const payload = buildSavePayload(editing)
       if (editing.id) {
         await updateExaminer(pw, editing.id, payload)
-        setMsg('✅ Examiner updated.')
+        showMsg('Examiner updated')
       } else {
-        delete payload.id
         await addExaminer(pw, payload)
-        setMsg('✅ Examiner added.')
+        showMsg('Examiner added')
       }
-
       await load()
       closeForm()
     } catch (err) {
-      setMsg('❌ Error: ' + err.message)
+      showMsg('Save failed: ' + err.message, true)
     } finally {
       setSaving(false)
     }
@@ -91,105 +166,188 @@ export default function AdminPage() {
     if (!confirm(`Delete "${name}"? This cannot be undone.`)) return
     try {
       await deleteExaminer(pw, id)
-      setMsg(`✅ Deleted ${name}.`)
-      await load()
+      setExaminers((list) => list.filter((ex) => ex.id !== id))
+      showMsg(`Deleted ${name}`)
     } catch (err) {
-      setMsg('❌ Delete error: ' + err.message)
+      showMsg('Delete failed: ' + err.message, true)
     }
   }
 
-  // ── Login screen ──────────────────────────────────────────────────────────
   if (!authed) {
     return (
       <div className="admin-login">
         <h1>Admin Login</h1>
+        <p className="admin-login-hint">Manage examiner listings</p>
         <input
           type="password"
           placeholder="Password"
           value={pw}
           onChange={(e) => setPw(e.target.value)}
           onKeyDown={(e) => e.key === 'Enter' && login()}
+          autoComplete="current-password"
         />
-        <button onClick={login} className="btn btn--call">Login</button>
+        <button type="button" onClick={login} className="btn btn--call">
+          Login
+        </button>
       </div>
     )
   }
 
-  // ── Main admin panel ──────────────────────────────────────────────────────
+  const activeCount = examiners.filter((e) => e.active).length
+
   return (
     <div className="admin-panel">
       <div className="admin-header">
-        <h1>Admin Panel</h1>
-        <button className="btn btn--call" onClick={openNew}>+ Add Examiner</button>
+        <div>
+          <h1>Admin Panel</h1>
+          <p className="admin-subtitle">
+            {loading ? 'Loading…' : `${examiners.length} listings · ${activeCount} active`}
+          </p>
+        </div>
+        <div className="admin-header-actions">
+          <button type="button" className="btn btn--call" onClick={openNew}>
+            + Add Examiner
+          </button>
+          <button type="button" className="admin-btn" onClick={logout}>
+            Logout
+          </button>
+        </div>
       </div>
 
-      {msg && <p className="admin-msg">{msg}</p>}
+      {msg && (
+        <p className={`admin-msg ${msg.isError ? 'admin-msg--error' : ''}`} role="status">
+          {msg.text}
+        </p>
+      )}
 
-      <table className="admin-table">
-        <thead>
-          <tr>
-            <th>Name</th><th>City</th><th>Tier</th><th>Active</th><th>Verified</th><th>Actions</th>
-          </tr>
-        </thead>
-        <tbody>
-          {examiners.map((ex) => (
-            <tr key={ex.id}>
-              <td>{ex.name}</td>
-              <td>{ex.city}</td>
-              <td>
-                <select
-                  value={ex.tier}
-                  onChange={(e) => quickUpdate(ex.id, { tier: e.target.value })}
-                  className="tier-select"
-                >
-                  <option value="free">Free</option>
-                  <option value="featured">Featured</option>
-                  <option value="premium">Premium</option>
-                </select>
-              </td>
-              <td>
-                <input
-                  type="checkbox"
-                  checked={ex.active}
-                  onChange={(e) => quickUpdate(ex.id, { active: e.target.checked })}
-                />
-              </td>
-              <td>
-                <input
-                  type="checkbox"
-                  checked={ex.verified}
-                  onChange={(e) => quickUpdate(ex.id, { verified: e.target.checked })}
-                />
-              </td>
-              <td>
-                <button className="admin-btn" onClick={() => openEdit(ex)}>Edit</button>
-                <button className="admin-btn admin-btn--danger" onClick={() => handleDelete(ex.id, ex.name)}>Delete</button>
-              </td>
+      <div className="admin-table-wrap">
+        <table className="admin-table">
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>City</th>
+              <th>Phone</th>
+              <th>Tier</th>
+              <th>Active</th>
+              <th>Verified</th>
+              <th>Actions</th>
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody>
+            {examiners.map((ex) => {
+              const busy = updatingId === ex.id
+              return (
+                <tr key={ex.id} className={!ex.active ? 'admin-row--inactive' : ''}>
+                  <td className="admin-cell-name">
+                    {ex.name}
+                    {!ex.active && <span className="admin-tag admin-tag--hidden">Hidden</span>}
+                  </td>
+                  <td>{ex.city || '—'}</td>
+                  <td className="admin-cell-phone">{ex.phone || '—'}</td>
+                  <td>
+                    <select
+                      value={ex.tier || 'free'}
+                      disabled={busy}
+                      onChange={(e) => quickUpdate(ex.id, { tier: e.target.value })}
+                      className={`tier-select tier-select--${ex.tier || 'free'}`}
+                      aria-label={`Tier for ${ex.name}`}
+                    >
+                      <option value="free">Free</option>
+                      <option value="featured">Featured</option>
+                      <option value="premium">Premium</option>
+                    </select>
+                  </td>
+                  <td className="admin-cell-check">
+                    <input
+                      type="checkbox"
+                      className="admin-toggle"
+                      checked={!!ex.active}
+                      disabled={busy}
+                      onChange={(e) => quickUpdate(ex.id, { active: e.target.checked })}
+                      aria-label={`Active: ${ex.name}`}
+                    />
+                  </td>
+                  <td className="admin-cell-check">
+                    <input
+                      type="checkbox"
+                      className="admin-toggle"
+                      checked={!!ex.verified}
+                      disabled={busy}
+                      onChange={(e) => quickUpdate(ex.id, { verified: e.target.checked })}
+                      aria-label={`Verified: ${ex.name}`}
+                    />
+                  </td>
+                  <td className="admin-cell-actions">
+                    <button
+                      type="button"
+                      className="admin-btn"
+                      onClick={() => openEdit(ex)}
+                    >
+                      Edit
+                    </button>
+                    <button
+                      type="button"
+                      className="admin-btn admin-btn--danger"
+                      onClick={() => handleDelete(ex.id, ex.name)}
+                    >
+                      Delete
+                    </button>
+                  </td>
+                </tr>
+              )
+            })}
+            {!loading && examiners.length === 0 && (
+              <tr>
+                <td colSpan={7} className="admin-empty">
+                  No examiners yet. Click &quot;+ Add Examiner&quot; to create one.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      {/* ── Edit / Add Form ── */}
       {formOpen && editing && (
         <div className="modal-overlay" onClick={closeForm}>
-          <form className="modal" onClick={(e) => e.stopPropagation()} onSubmit={handleSave}>
-            <h2>{editing.id ? 'Edit Examiner' : 'Add Examiner'}</h2>
+          <form
+            className="modal modal--admin"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={handleSave}
+          >
+            <div className="modal-header">
+              <h2>{editing.id ? 'Edit Examiner' : 'Add Examiner'}</h2>
+            </div>
 
-            <div className="form-grid">
+            <div className="modal-body">
+              <div className="form-grid">
               <Field label="Name *" required value={editing.name} onChange={(v) => setEditing({ ...editing, name: v })} />
               <Field label="Clinic Type" value={editing.clinic_type} onChange={(v) => setEditing({ ...editing, clinic_type: v })} />
-              <Field label="City" value={editing.city} onChange={(v) => setEditing({ ...editing, city: v })} />
+
+              <label className="form-label">
+                City
+                <select
+                  className="form-input"
+                  value={editing.city}
+                  onChange={(e) => setEditing({ ...editing, city: e.target.value })}
+                >
+                  <option value="">— Select city —</option>
+                  {CITIES.map((c) => (
+                    <option key={c} value={c}>{c}</option>
+                  ))}
+                </select>
+              </label>
+
+              <Field label="State" value={editing.state} onChange={(v) => setEditing({ ...editing, state: v })} />
               <Field label="Address" value={editing.address} onChange={(v) => setEditing({ ...editing, address: v })} />
               <Field label="Phone" value={editing.phone} onChange={(v) => setEditing({ ...editing, phone: v })} />
+              <Field label="Fax (optional)" value={editing.fax} onChange={(v) => setEditing({ ...editing, fax: v })} />
               <Field label="Email" type="email" value={editing.email} onChange={(v) => setEditing({ ...editing, email: v })} />
+              <Field label="Website (optional)" value={editing.website} onChange={(v) => setEditing({ ...editing, website: v })} />
               <Field label="Price" value={editing.price} onChange={(v) => setEditing({ ...editing, price: v })} />
               <Field label="Wait Time" value={editing.wait_time} onChange={(v) => setEditing({ ...editing, wait_time: v })} />
-              <Field label="Hours" value={editing.hours} onChange={(v) => setEditing({ ...editing, hours: v })} />
-              <Field label="Rating" type="number" step="0.1" min="1" max="5" value={editing.rating} onChange={(v) => setEditing({ ...editing, rating: v })} />
-              <Field label="Review Count" type="number" value={editing.review_count} onChange={(v) => setEditing({ ...editing, review_count: v })} />
-              <Field label="Badges (comma-separated)" value={Array.isArray(editing.badges) ? editing.badges.join(', ') : editing.badges} onChange={(v) => setEditing({ ...editing, badges: v })} />
-              <Field label="Accepts (comma-separated)" value={Array.isArray(editing.accepts) ? editing.accepts.join(', ') : editing.accepts} onChange={(v) => setEditing({ ...editing, accepts: v })} />
+              <Field label="Hours" value={editing.hours} onChange={(v) => setEditing({ ...editing, hours: v })} placeholder="e.g. Mon–Fri 7am–6pm" />
+              <Field label="Badges (comma-separated)" value={editing.badges} onChange={(v) => setEditing({ ...editing, badges: v })} placeholder="Walk-ins Welcome, FMCSA Certified" />
+              <Field label="Accepts (comma-separated)" value={editing.accepts} onChange={(v) => setEditing({ ...editing, accepts: v })} placeholder="All CDL Classes, Hazmat" />
 
               <label className="form-label">
                 Tier
@@ -199,19 +357,36 @@ export default function AdminPage() {
                   onChange={(e) => setEditing({ ...editing, tier: e.target.value })}
                 >
                   <option value="free">Free</option>
-                  <option value="featured">Featured</option>
-                  <option value="premium">Premium</option>
+                  <option value="featured">Featured ($49/mo)</option>
+                  <option value="premium">Premium ($99/mo)</option>
                 </select>
               </label>
-            </div>
+              </div>
 
-            <div className="form-checks">
-              <label><input type="checkbox" checked={editing.verified} onChange={(e) => setEditing({ ...editing, verified: e.target.checked })} /> FMCSA Verified</label>
-              <label><input type="checkbox" checked={editing.active} onChange={(e) => setEditing({ ...editing, active: e.target.checked })} /> Active</label>
+              <div className="form-checks">
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={!!editing.verified}
+                    onChange={(e) => setEditing({ ...editing, verified: e.target.checked })}
+                  />
+                  FMCSA Verified
+                </label>
+                <label>
+                  <input
+                    type="checkbox"
+                    checked={!!editing.active}
+                    onChange={(e) => setEditing({ ...editing, active: e.target.checked })}
+                  />
+                  Active (visible on site)
+                </label>
+              </div>
             </div>
 
             <div className="modal-actions">
-              <button type="button" className="btn" onClick={closeForm}>Cancel</button>
+              <button type="button" className="btn admin-btn-cancel" onClick={closeForm}>
+                Cancel
+              </button>
               <button type="submit" className="btn btn--call" disabled={saving}>
                 {saving ? 'Saving…' : 'Save'}
               </button>

@@ -11,6 +11,8 @@ create table if not exists public.examiners (
   state                 text default 'OK',
   address               text,
   phone                 text,
+  fax                   text,
+  website               text,
   email                 text,
   price                 text,
   wait_time             text,

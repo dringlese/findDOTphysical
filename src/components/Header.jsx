@@ -1,11 +1,16 @@
 import { Link } from 'react-router-dom'
+import { HiTruck } from 'react-icons/hi2'
 
 export default function Header() {
   return (
     <header className="site-header">
       <div className="header-inner">
         <Link to="/" className="logo">
-          🚛 <span>FindDOTPhysical</span><span className="logo-tld">.com</span>
+          <HiTruck className="logo-icon" aria-hidden="true" />
+          <span className="logo-text">
+            <span className="logo-name">FindDOTPhysical</span>
+            <span className="logo-tld">.com</span>
+          </span>
         </Link>
         <nav className="header-nav">
           <Link to="/oklahoma-city" className="nav-link">Oklahoma City</Link>
