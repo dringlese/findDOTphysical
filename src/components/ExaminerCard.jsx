@@ -55,7 +55,7 @@ function badgeClass(name) {
 
 export default function ExaminerCard({ examiner }) {
   const {
-    id, name, clinic_type, city, state, address, phone, fax,
+    id, name, practice_name, clinic_type, city, state, address, phone, fax,
     price, wait_time, hours, badges = [],
     tier, verified, website,
   } = examiner
@@ -102,6 +102,9 @@ export default function ExaminerCard({ examiner }) {
 
       <header className="card-header">
         <h3 className="card-name">{name}</h3>
+        {hasText(practice_name) && (
+          <p className="card-practice">{practice_name.trim()}</p>
+        )}
         {verified && (
           <span className="verified-badge" title="FMCSA Verified">
             <HiCheckBadge className="icon-inline" aria-hidden="true" />

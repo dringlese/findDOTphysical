@@ -19,12 +19,14 @@ function sanitizeSearchTerm(term) {
     .trim()
 }
 
-/** Premium → Featured → Free, then alphabetical by name */
+/** Premium -> Featured -> Free, then alphabetical by provider/practice name */
 export function sortExaminersByTier(list) {
   return [...list].sort((a, b) => {
     const byTier = (TIER_ORDER[a.tier] ?? 3) - (TIER_ORDER[b.tier] ?? 3)
     if (byTier !== 0) return byTier
-    return (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
+    const aLabel = a.practice_name || a.name || ''
+    const bLabel = b.practice_name || b.name || ''
+    return aLabel.localeCompare(bLabel, undefined, { sensitivity: 'base' })
   })
 }
 
@@ -38,8 +40,8 @@ export async function getExaminers({ city, search, walkIns, openWeekends } = {})
 
   const q = sanitizeSearchTerm(search || '')
   if (q) {
-    // Match practice names that start with the search text (e.g. "ed" → Edmond)
-    query = query.ilike('name', `${q}%`)
+    // Match provider or practice names that start with the search text.
+    query = query.or(`name.ilike.${q}%,practice_name.ilike.${q}%`)
   }
 
   const { data, error } = await query

@@ -15,6 +15,7 @@ const CITIES = [
 
 const BLANK = {
   name: '',
+  practice_name: '',
   clinic_type: '',
   city: '',
   state: 'OK',
@@ -36,6 +37,7 @@ const BLANK = {
 function buildSavePayload(editing) {
   return {
     name: editing.name,
+    practice_name: editing.practice_name,
     clinic_type: editing.clinic_type,
     city: editing.city,
     state: editing.state || 'OK',
@@ -139,7 +141,7 @@ export default function AdminPage() {
   async function handleSave(e) {
     e.preventDefault()
     if (!editing.name?.trim()) {
-      showMsg('Name is required', true)
+      showMsg('Provider name is required', true)
       return
     }
 
@@ -224,7 +226,7 @@ export default function AdminPage() {
         <table className="admin-table">
           <thead>
             <tr>
-              <th>Name</th>
+              <th>Provider / Practice</th>
               <th>City</th>
               <th>Phone</th>
               <th>Tier</th>
@@ -239,7 +241,10 @@ export default function AdminPage() {
               return (
                 <tr key={ex.id} className={!ex.active ? 'admin-row--inactive' : ''}>
                   <td className="admin-cell-name">
-                    {ex.name}
+                    <span>{ex.name}</span>
+                    {ex.practice_name && (
+                      <span className="admin-cell-subtitle">{ex.practice_name}</span>
+                    )}
                     {!ex.active && <span className="admin-tag admin-tag--hidden">Hidden</span>}
                   </td>
                   <td>{ex.city || '—'}</td>
@@ -320,7 +325,8 @@ export default function AdminPage() {
 
             <div className="modal-body">
               <div className="form-grid">
-              <Field label="Name *" required value={editing.name} onChange={(v) => setEditing({ ...editing, name: v })} />
+              <Field label="Provider Name *" required value={editing.name} onChange={(v) => setEditing({ ...editing, name: v })} />
+              <Field label="Practice Name" value={editing.practice_name} onChange={(v) => setEditing({ ...editing, practice_name: v })} />
               <Field label="Clinic Type" value={editing.clinic_type} onChange={(v) => setEditing({ ...editing, clinic_type: v })} />
 
               <label className="form-label">

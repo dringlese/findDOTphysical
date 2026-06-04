@@ -413,6 +413,14 @@ a:hover { text-decoration: underline; }
   overflow-wrap: anywhere;
   word-break: break-word;
 }
+.card-practice {
+  color: var(--text);
+  font-size: 0.92rem;
+  font-weight: 600;
+  margin: -2px 0 0;
+  opacity: 0.9;
+  overflow-wrap: anywhere;
+}
 .verified-badge {
   display: inline-flex; align-self: flex-start; align-items: center; gap: 4px;
   background: rgba(46, 125, 50, 0.2); color: var(--green-bright);
@@ -625,7 +633,17 @@ a:hover { text-decoration: underline; }
 .admin-table tr:hover td { background: rgba(255,255,255,0.02); }
 .admin-row--inactive td { opacity: 0.55; }
 .admin-row--inactive .admin-cell-name { opacity: 1; }
-.admin-cell-name { font-weight: 600; max-width: 200px; white-space: normal; }
+.admin-cell-name { font-weight: 600; max-width: 220px; white-space: normal; }
+.admin-cell-name > span:first-child,
+.admin-cell-subtitle {
+  display: block;
+}
+.admin-cell-subtitle {
+  color: var(--text-muted);
+  font-size: 0.78rem;
+  font-weight: 500;
+  margin-top: 3px;
+}
 .admin-cell-phone { font-variant-numeric: tabular-nums; }
 .admin-cell-check { text-align: center; }
 .admin-cell-actions { white-space: nowrap; }

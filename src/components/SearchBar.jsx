@@ -59,7 +59,7 @@ export default function SearchBar({ onSearch }) {
       <div className="search-controls">
         <div className="search-name-field">
           <label htmlFor="examiner-search" className="search-field-label">
-            Practice name
+            Practice/Provider Name
           </label>
           <div className="search-input-wrap">
             <HiMagnifyingGlass className="search-input-icon" aria-hidden="true" />
@@ -67,7 +67,7 @@ export default function SearchBar({ onSearch }) {
               id="examiner-search"
               type="search"
               className="search-input search-input--icon"
-              placeholder="Practice name starts with…"
+              placeholder="Practice or provider name starts with..."
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               aria-describedby="search-hint"
@@ -99,7 +99,7 @@ export default function SearchBar({ onSearch }) {
       </div>
 
       <p id="search-hint" className="search-hint">
-        Matches practice names that start with your text. Use the city dropdown for location.
+        Matches practice or provider names that start with your text. Use the city dropdown for location.
       </p>
 
       <div className="search-filters">

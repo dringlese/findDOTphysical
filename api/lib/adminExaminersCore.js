@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js'
 
 const ALLOWED_FIELDS = new Set([
   'name',
+  'practice_name',
   'clinic_type',
   'city',
   'state',
@@ -25,6 +26,7 @@ const ALLOWED_FIELDS = new Set([
 
 const STRING_FIELDS = new Set([
   'name',
+  'practice_name',
   'clinic_type',
   'city',
   'state',
@@ -38,7 +40,14 @@ const STRING_FIELDS = new Set([
   'hours',
 ])
 
-const OPTIONAL_STRING_FIELDS = new Set(['fax', 'email', 'website', 'address', 'clinic_type'])
+const OPTIONAL_STRING_FIELDS = new Set([
+  'practice_name',
+  'fax',
+  'email',
+  'website',
+  'address',
+  'clinic_type',
+])
 
 function getSupabase() {
   const url = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL
