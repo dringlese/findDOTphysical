@@ -1,6 +1,8 @@
+import { Helmet } from 'react-helmet-async'
 import { HiOutlineExclamationCircle } from 'react-icons/hi2'
 import ExaminerCard from './ExaminerCard'
 import ExaminerListSkeleton from './ExaminerListSkeleton'
+import { buildExaminerSchema } from './SEOHead'
 
 /**
  * Shared results area: skeleton while loading, then list or empty state.
@@ -35,6 +37,16 @@ export default function ExaminerResults({
 
   return (
     <>
+      {examiners.length > 0 && (
+        <Helmet>
+          {examiners.map((ex) => (
+            <script key={ex.id} type="application/ld+json">
+              {JSON.stringify(buildExaminerSchema(ex))}
+            </script>
+          ))}
+        </Helmet>
+      )}
+
       <p className="results-count">
         {countLabel}
         {examiners.length > 0 && sortHint && (

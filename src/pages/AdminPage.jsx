@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { getAllExaminers, addExaminer, updateExaminer, deleteExaminer } from '../lib/supabase'
+import SEOHead from '../components/SEOHead'
 
 const ADMIN_PASSWORD = import.meta.env.VITE_ADMIN_PASSWORD || 'dotadmin2024'
 
@@ -177,28 +178,43 @@ export default function AdminPage() {
 
   if (!authed) {
     return (
-      <div className="admin-login">
-        <h1>Admin Login</h1>
-        <p className="admin-login-hint">Manage examiner listings</p>
-        <input
-          type="password"
-          placeholder="Password"
-          value={pw}
-          onChange={(e) => setPw(e.target.value)}
-          onKeyDown={(e) => e.key === 'Enter' && login()}
-          autoComplete="current-password"
+      <>
+        <SEOHead
+          title="Admin Login"
+          description="FindDOTPhysical.com admin login."
+          canonical="https://www.finddotphysical.com/admin"
+          noindex
         />
-        <button type="button" onClick={login} className="btn btn--call">
-          Login
-        </button>
-      </div>
+        <div className="admin-login">
+          <h1>Admin Login</h1>
+          <p className="admin-login-hint">Manage examiner listings</p>
+          <input
+            type="password"
+            placeholder="Password"
+            value={pw}
+            onChange={(e) => setPw(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && login()}
+            autoComplete="current-password"
+          />
+          <button type="button" onClick={login} className="btn btn--call">
+            Login
+          </button>
+        </div>
+      </>
     )
   }
 
   const activeCount = examiners.filter((e) => e.active).length
 
   return (
-    <div className="admin-panel">
+    <>
+      <SEOHead
+        title="Admin Panel"
+        description="FindDOTPhysical.com admin panel."
+        canonical="https://www.finddotphysical.com/admin"
+        noindex
+      />
+      <div className="admin-panel">
       <div className="admin-header">
         <div>
           <h1>Admin Panel</h1>
@@ -400,7 +416,8 @@ export default function AdminPage() {
           </form>
         </div>
       )}
-    </div>
+      </div>
+    </>
   )
 }
 

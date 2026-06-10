@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async'
 
-export default function SEOHead({ title, description, canonical, schema }) {
+export default function SEOHead({ title, description, canonical, schema, noindex = false }) {
   const fullTitle = title
     ? `${title} | FindDOTPhysical.com`
     : 'Find DOT Physical Examiners in Oklahoma | FindDOTPhysical.com'
@@ -14,9 +14,12 @@ export default function SEOHead({ title, description, canonical, schema }) {
       <title>{fullTitle}</title>
       <meta name="description" content={metaDesc} />
       <link rel="canonical" href={canonical || 'https://www.finddotphysical.com'} />
+      <meta name="robots" content={noindex ? 'noindex, nofollow' : 'index, follow'} />
       <meta property="og:title" content={fullTitle} />
       <meta property="og:description" content={metaDesc} />
       <meta property="og:type" content="website" />
+      <meta property="og:url" content={canonical || 'https://www.finddotphysical.com'} />
+      <meta name="twitter:card" content="summary" />
       {schema && (
         <script type="application/ld+json">{JSON.stringify(schema)}</script>
       )}
@@ -26,10 +29,13 @@ export default function SEOHead({ title, description, canonical, schema }) {
 
 /** Build LocalBusiness schema for an examiner card */
 export function buildExaminerSchema(examiner) {
+  const businessName = examiner.practice_name || examiner.name
+
   return {
     '@context': 'https://schema.org',
     '@type': 'LocalBusiness',
-    name: examiner.name,
+    name: businessName,
+    alternateName: examiner.practice_name ? examiner.name : undefined,
     address: {
       '@type': 'PostalAddress',
       streetAddress: examiner.address,
@@ -38,6 +44,7 @@ export function buildExaminerSchema(examiner) {
       addressCountry: 'US',
     },
     telephone: examiner.phone,
+    url: examiner.website,
     priceRange: examiner.price,
   }
 }

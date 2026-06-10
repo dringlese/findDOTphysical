@@ -73,8 +73,8 @@ export default function CityPage() {
     load()
   }, [cityName])
 
-  const pageTitle = `DOT Physical Examiners in ${cityName}, OK — Same Day Available`
-  const metaDesc = `Find FMCSA-certified DOT physical examiners in ${cityName}, Oklahoma. Same-day appointments available. Get your CDL medical card fast. | FindDOTPhysical.com`
+  const pageTitle = `DOT Physical Examiners in ${cityName}, OK - Same Day Available`
+  const metaDesc = `Find FMCSA-certified DOT physical examiners in ${cityName}, OK. Compare clinics, hours, pricing, and call for your CDL medical card.`
 
   return (
     <>
