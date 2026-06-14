@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useParams } from 'react-router-dom'
 import { getExaminers } from '../lib/supabase'
-import ExaminerCard from '../components/ExaminerCard'
+import ExaminerResults from '../components/ExaminerResults'
 import SEOHead from '../components/SEOHead'
 
 // Map URL slug → display name + SEO copy
@@ -73,8 +73,8 @@ export default function CityPage() {
     load()
   }, [cityName])
 
-  const pageTitle = `DOT Physical Examiners in ${cityName}, OK — Same Day Available`
-  const metaDesc = `Find FMCSA-certified DOT physical examiners in ${cityName}, Oklahoma. Same-day appointments available. Get your CDL medical card fast. | FindDOTPhysical.com`
+  const pageTitle = `DOT Physical Examiners in ${cityName}, OK - Same Day Available`
+  const metaDesc = `Find FMCSA-certified DOT physical examiners in ${cityName}, OK. Compare clinics, hours, pricing, and call for your CDL medical card.`
 
   return (
     <>
@@ -90,27 +90,20 @@ export default function CityPage() {
           {meta?.intro && <p className="city-intro">{meta.intro}</p>}
         </section>
 
-        <section className="results-section">
-          {loading && <p className="state-msg">Loading examiners…</p>}
-          {error && <p className="state-msg state-msg--error">Error: {error}</p>}
-
-          {!loading && !error && (
-            <>
-              <p className="results-count">
-                {examiners.length} examiner{examiners.length !== 1 ? 's' : ''} in {cityName}
-              </p>
-              {examiners.length === 0 ? (
-                <p className="state-msg">
-                  No listings yet for {cityName}.{' '}
-                  <a href="/get-listed">Be the first to get listed →</a>
-                </p>
-              ) : (
-                <div className="results-grid">
-                  {examiners.map((ex) => <ExaminerCard key={ex.id} examiner={ex} />)}
-                </div>
-              )}
-            </>
-          )}
+        <section className="results-section" aria-live="polite">
+          <ExaminerResults
+            examiners={examiners}
+            loading={loading}
+            error={error}
+            countLabel={`${examiners.length} examiner${examiners.length !== 1 ? 's' : ''} in ${cityName}`}
+            emptyMessage={
+              <>
+                No listings yet for {cityName}.{' '}
+                <a href="/get-listed">Be the first to get listed →</a>
+              </>
+            }
+            sortHint=""
+          />
         </section>
 
         <section className="cta-banner">

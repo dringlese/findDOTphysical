@@ -6,11 +6,14 @@ create extension if not exists "pgcrypto";
 create table if not exists public.examiners (
   id                    uuid primary key default gen_random_uuid(),
   name                  text not null,
+  practice_name         text,
   clinic_type           text,
   city                  text,
   state                 text default 'OK',
   address               text,
   phone                 text,
+  fax                   text,
+  website               text,
   email                 text,
   price                 text,
   wait_time             text,
@@ -34,15 +37,17 @@ create policy "Public read active examiners"
   on public.examiners for select
   using (active = true);
 
--- Only service role (server-side) can insert/update/delete
--- (your Vercel API functions use SUPABASE_SERVICE_ROLE_KEY)
+-- Only service role (server-side) can insert/update/delete.
+-- The admin panel uses /api/admin-examiners (Vercel) with SUPABASE_SERVICE_ROLE_KEY.
+-- Do NOT add public UPDATE policies on the anon key — that would let anyone edit listings.
 
 -- ─── Sample Data — 5 seed rows ────────────────────────────────────────────────
 insert into public.examiners
-  (name, clinic_type, city, address, phone, price, wait_time, hours, badges, accepts, rating, review_count, tier, verified, active)
+  (name, practice_name, clinic_type, city, address, phone, price, wait_time, hours, badges, accepts, rating, review_count, tier, verified, active)
 values
   (
     'OKC Occupational Health Center',
+    null,
     'Occupational Health',
     'Oklahoma City',
     '1234 N Lincoln Blvd, Oklahoma City, OK 73104',
@@ -56,6 +61,7 @@ values
   ),
   (
     'Tulsa DOT Medical Clinic',
+    null,
     'Urgent Care',
     'Tulsa',
     '5678 S Peoria Ave, Tulsa, OK 74105',
@@ -69,6 +75,7 @@ values
   ),
   (
     'Norman CDL Physical Center',
+    null,
     'Chiropractic',
     'Norman',
     '900 W Main St, Norman, OK 73069',
@@ -82,6 +89,7 @@ values
   ),
   (
     'Lawton Truck Driver Health',
+    null,
     'Occupational Health',
     'Lawton',
     '300 SW C Ave, Lawton, OK 73501',
@@ -95,6 +103,7 @@ values
   ),
   (
     'Edmond Express DOT Exams',
+    null,
     'Urgent Care',
     'Edmond',
     '1500 S Broadway, Edmond, OK 73034',

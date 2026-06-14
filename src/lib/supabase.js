@@ -9,59 +9,96 @@ export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 // ─── Examiner Queries ────────────────────────────────────────────────────────
 
-/** Fetch all active examiners, premium first */
-export async function getExaminers({ city, search, walkIns, openWeekends } = {}) {
-  let query = supabase
-    .from('examiners')
-    .select('*')
-    .eq('active', true)
-    .order('tier', { ascending: false }) // premium > featured > free
+const TIER_ORDER = { premium: 0, featured: 1, free: 2 }
 
-  if (city) query = query.ilike('city', city)
+/** Strip characters that break PostgREST `.or()` filters */
+function sanitizeSearchTerm(term) {
+  return term
+    .replace(/[%,()]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/** Premium -> Featured -> Free, then alphabetical by provider/practice name */
+export function sortExaminersByTier(list) {
+  return [...list].sort((a, b) => {
+    const byTier = (TIER_ORDER[a.tier] ?? 3) - (TIER_ORDER[b.tier] ?? 3)
+    if (byTier !== 0) return byTier
+    const aLabel = a.practice_name || a.name || ''
+    const bLabel = b.practice_name || b.name || ''
+    return aLabel.localeCompare(bLabel, undefined, { sensitivity: 'base' })
+  })
+}
+
+/** Fetch active examiners with optional filters; sorted premium first */
+export async function getExaminers({ city, search, walkIns, openWeekends } = {}) {
+  let query = supabase.from('examiners').select('*').eq('active', true)
+
+  if (city) query = query.eq('city', city)
   if (walkIns) query = query.contains('badges', ['Walk-ins Welcome'])
   if (openWeekends) query = query.contains('badges', ['Open Weekends'])
-  if (search) {
-    query = query.or(`name.ilike.%${search}%,city.ilike.%${search}%,clinic_type.ilike.%${search}%`)
+
+  const q = sanitizeSearchTerm(search || '')
+  if (q) {
+    // Match provider or practice names that start with the search text.
+    query = query.or(`name.ilike.${q}%,practice_name.ilike.${q}%`)
   }
 
   const { data, error } = await query
   if (error) throw error
 
-  // Sort: premium → featured → free (Supabase text sort isn't perfect for this)
-  const tierOrder = { premium: 0, featured: 1, free: 2 }
-  return (data || []).sort((a, b) => (tierOrder[a.tier] ?? 3) - (tierOrder[b.tier] ?? 3))
+  return sortExaminersByTier(data || [])
+}
+
+// ─── Admin API (service role server-side — bypasses RLS) ─────────────────────
+
+async function adminRequest(adminPassword, method, { body, id } = {}) {
+  const url = id ? `/api/admin-examiners?id=${encodeURIComponent(id)}` : '/api/admin-examiners'
+  const res = await fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      'x-admin-password': adminPassword,
+    },
+    body: body ? JSON.stringify(body) : undefined,
+  })
+
+  if (res.status === 204) return null
+
+  const contentType = res.headers.get('content-type') || ''
+  if (!contentType.includes('application/json')) {
+    throw new Error(
+      'Admin API not reachable. Restart with `npm run dev` and ensure SUPABASE_SERVICE_ROLE_KEY is in .env'
+    )
+  }
+
+  const data = await res.json().catch(() => ({}))
+  if (!res.ok) throw new Error(data.message || `Request failed (${res.status})`)
+
+  if (method === 'GET' && !Array.isArray(data)) {
+    throw new Error('Admin API returned invalid data')
+  }
+
+  return data
 }
 
 /** Fetch all examiners (admin) */
-export async function getAllExaminers() {
-  const { data, error } = await supabase
-    .from('examiners')
-    .select('*')
-    .order('created_at', { ascending: false })
-  if (error) throw error
-  return data || []
+export async function getAllExaminers(adminPassword) {
+  const data = await adminRequest(adminPassword, 'GET')
+  return Array.isArray(data) ? data : []
 }
 
 /** Add a new examiner */
-export async function addExaminer(examiner) {
-  const { data, error } = await supabase.from('examiners').insert([examiner]).select()
-  if (error) throw error
-  return data[0]
+export async function addExaminer(adminPassword, examiner) {
+  return adminRequest(adminPassword, 'POST', { body: examiner })
 }
 
 /** Update an examiner */
-export async function updateExaminer(id, updates) {
-  const { data, error } = await supabase
-    .from('examiners')
-    .update(updates)
-    .eq('id', id)
-    .select()
-  if (error) throw error
-  return data[0]
+export async function updateExaminer(adminPassword, id, updates) {
+  return adminRequest(adminPassword, 'PATCH', { body: { id, ...updates } })
 }
 
 /** Delete an examiner */
-export async function deleteExaminer(id) {
-  const { error } = await supabase.from('examiners').delete().eq('id', id)
-  if (error) throw error
+export async function deleteExaminer(adminPassword, id) {
+  await adminRequest(adminPassword, 'DELETE', { id })
 }
