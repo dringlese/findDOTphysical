@@ -107,7 +107,9 @@ export default function CityPage() {
         </section>
 
         <section className="cta-banner">
-          <p className="cta-text">Are you a DOT examiner in {cityName}?</p>
+          <p className="cta-text">
+            Are you an FMCSA National Registry Certified Medical Examiner in {cityName}?
+          </p>
           <a href="/get-listed" className="btn btn--cta">Get Listed Free →</a>
         </section>
       </main>
