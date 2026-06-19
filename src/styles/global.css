@@ -553,7 +553,12 @@ a:hover { text-decoration: underline; }
   padding: 32px 16px; background: var(--bg-card);
   display: flex; flex-direction: column; align-items: center; gap: 16px;
 }
-.cta-text { font-size: 1.15rem; font-weight: 600; }
+.cta-text {
+  font-size: 1.15rem;
+  font-weight: 600;
+  max-width: 40rem;
+  line-height: 1.35;
+}
 
 /* ─── Get Listed Tiers ─────────────────────────────────────────────────────── */
 .tiers-section { margin: 32px 0; }
@@ -851,6 +856,7 @@ a:hover { text-decoration: underline; }
 
   /* CTA */
   .cta-banner { padding: 24px 16px; }
+  .cta-text { font-size: 1rem; }
   .btn--cta { width: 100%; white-space: normal; }
 }
 
