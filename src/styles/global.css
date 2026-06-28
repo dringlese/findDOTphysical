@@ -553,7 +553,12 @@ a:hover { text-decoration: underline; }
   padding: 32px 16px; background: var(--bg-card);
   display: flex; flex-direction: column; align-items: center; gap: 16px;
 }
-.cta-text { font-size: 1.15rem; font-weight: 600; }
+.cta-text {
+  font-size: 1.15rem;
+  font-weight: 600;
+  max-width: 40rem;
+  line-height: 1.35;
+}
 
 /* ─── Get Listed Tiers ─────────────────────────────────────────────────────── */
 .tiers-section { margin: 32px 0; }
@@ -851,6 +856,7 @@ a:hover { text-decoration: underline; }
 
   /* CTA */
   .cta-banner { padding: 24px 16px; }
+  .cta-text { font-size: 1rem; }
   .btn--cta { width: 100%; white-space: normal; }
 }
 
@@ -867,4 +873,121 @@ a:hover { text-decoration: underline; }
   .card-detail dd { font-size: 0.88rem; }
   .badge { font-size: 0.72rem; padding: 4px 9px; }
   .skeleton-block { grid-template-columns: 1fr; }
+}
+
+/* ─── Coming Soon / Demo Mode ─────────────────────────────────────────────── */
+.cs-page {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
+  padding: 32px 20px;
+  text-align: center;
+}
+
+.cs-inner {
+  max-width: 640px;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 28px;
+}
+
+.cs-logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.25rem;
+  font-weight: 700;
+}
+.cs-logo-icon { font-size: 1.6rem; }
+.cs-logo-name { color: var(--green-bright); letter-spacing: 0.01em; }
+
+.cs-title {
+  font-size: clamp(2rem, 6vw, 3rem);
+  font-weight: 800;
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  color: var(--text);
+}
+
+.cs-sub {
+  font-size: 1rem;
+  color: var(--text-muted);
+  line-height: 1.7;
+  max-width: 520px;
+}
+
+/* Countdown timer */
+.cs-timer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 24px 32px;
+  width: 100%;
+  justify-content: center;
+}
+
+.cs-unit {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  min-width: 64px;
+}
+
+.cs-num {
+  font-size: clamp(2rem, 8vw, 3.2rem);
+  font-weight: 800;
+  color: var(--green-bright);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+  letter-spacing: -0.03em;
+}
+
+.cs-label {
+  font-size: 0.72rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+.cs-sep {
+  font-size: 2.4rem;
+  font-weight: 800;
+  color: var(--green);
+  line-height: 1;
+  margin-bottom: 20px;
+  user-select: none;
+}
+
+.cs-footer-note {
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.cs-admin-link {
+  color: var(--green-bright);
+  font-weight: 600;
+}
+
+.cs-copy {
+  margin-top: 48px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  opacity: 0.6;
+}
+
+@media (max-width: 480px) {
+  .cs-timer { padding: 18px 12px; gap: 4px; }
+  .cs-unit { min-width: 48px; }
+  .cs-num { font-size: 2rem; }
+  .cs-sep { font-size: 1.8rem; margin-bottom: 18px; }
 }

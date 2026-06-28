@@ -19,7 +19,7 @@ export default defineConfig({
     apiDevPlugin(),
     sitemap({
       hostname: 'https://www.finddotphysical.com',
-      dynamicRoutes: ['/', ...cityRoutes, '/get-listed'],
+      dynamicRoutes: [...cityRoutes, '/get-listed'],
     }),
   ],
   server: {
